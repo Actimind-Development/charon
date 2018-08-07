@@ -392,7 +392,8 @@ public class ResourceManagerUtil {
     }
 
     /**
-     * Process count value according to SCIM 2.0 specification
+     * Process count value according to SCIM 2.0 specification.
+     *
      * @param countStr
      * @return
      * @throws BadRequestException
@@ -418,7 +419,8 @@ public class ResourceManagerUtil {
     }
 
     /**
-     * Process startIndex value according to SCIM 2.0 specification
+     * Process startIndex value according to SCIM 2.0 specification.
+     *
      * @param startIndexStr
      * @return
      * @throws BadRequestException
