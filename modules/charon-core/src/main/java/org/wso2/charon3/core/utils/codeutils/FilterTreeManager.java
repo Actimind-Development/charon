@@ -39,6 +39,8 @@ import java.util.regex.Pattern;
 
 public class FilterTreeManager {
 
+    public static final char DQUOTE = '"';
+    public static final char SQUOTE = '\'';
     private StreamTokenizer input;
     protected List<String> tokenList = null;
     private String symbol;
@@ -57,8 +59,8 @@ public class FilterTreeManager {
         input.wordChars(128 + 32, 255);
         input.whitespaceChars(0, ' ');
         input.commentChar('/');
-        input.quoteChar('"');
-        input.quoteChar('\'');
+        input.quoteChar(DQUOTE);
+        input.quoteChar(SQUOTE);
 
         //Adding other string possible values
         input.wordChars('@', '@');
@@ -84,7 +86,7 @@ public class FilterTreeManager {
                 tokenList.add(concatenatedString);
                 concatenatedString = "";
                 tokenList.add(")");
-            } else if (input.ttype == StreamTokenizer.TT_WORD) {
+            } else if (input.ttype == StreamTokenizer.TT_WORD || isQuote(input.ttype)) {
                 if (!(input.sval.equalsIgnoreCase(SCIMConstants.OperationalConstants.AND)
                         || input.sval.equalsIgnoreCase(SCIMConstants.OperationalConstants.OR) ||
                         input.sval.equalsIgnoreCase(SCIMConstants.OperationalConstants.NOT))) {
@@ -301,5 +303,15 @@ public class FilterTreeManager {
             tokenList.remove(0);
             return value;
         }
+    }
+
+    /**
+     * returns is char code quote or not
+     *
+     * @param code
+     * @return
+     */
+    private static boolean isQuote(int code) {
+        return code == SQUOTE || code == DQUOTE;
     }
 }
