@@ -306,7 +306,7 @@ public class FilterTreeManager {
     }
 
     /**
-     * returns is char code quote or not
+     * returns is char code quote or not.
      *
      * @param code
      * @return

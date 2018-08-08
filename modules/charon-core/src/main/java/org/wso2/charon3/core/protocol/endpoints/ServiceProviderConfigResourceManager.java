@@ -47,6 +47,7 @@ public class ServiceProviderConfigResourceManager extends AbstractResourceManage
     private static final Logger log = LoggerFactory.getLogger(ServiceProviderConfigResourceManager.class);
 
     public ServiceProviderConfigResourceManager() {
+        setSchema(SCIMResourceSchemaManager.getInstance().getServiceProviderConfigResourceSchema());
     }
 
     /*
@@ -68,8 +69,7 @@ public class ServiceProviderConfigResourceManager extends AbstractResourceManage
             JSONDecoder decoder = getDecoder();
 
             // get the service provider config schema
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance()
-                    .getServiceProviderConfigResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //create a string in json format with relevant values
             String scimObjectString = encoder.buildServiceProviderConfigJsonBody(CharonConfiguration.getInstance()
                     .getConfig());

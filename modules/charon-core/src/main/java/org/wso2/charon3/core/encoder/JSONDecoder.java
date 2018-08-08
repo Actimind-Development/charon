@@ -352,8 +352,7 @@ public class JSONDecoder {
                 //this case is only valid for the extension schema
                 //As according to the spec we have complex attribute inside complex attribute only for extension,
                 //we need to treat it separately
-            } else if (complexAttributeSchema.getName().equals(
-                    SCIMResourceSchemaManager.getInstance().getExtensionName())) {
+            } else if (isExtension(complexAttributeSchema)) {
                 if (subAttributeSchemaType.equals(COMPLEX)) {
                     //check for user defined extension's schema violation
                     List<SCIMAttributeSchema> subList = subAttributeSchema.getSubAttributeSchemas();
@@ -427,6 +426,11 @@ public class JSONDecoder {
         }
         complexAttribute.setSubAttributesList(subAttributesMap);
         return (ComplexAttribute) DefaultAttributeFactory.createAttribute(complexAttributeSchema, complexAttribute);
+    }
+
+    protected boolean isExtension(AttributeSchema complexAttributeSchema) {
+        return complexAttributeSchema.getName().equals(
+                SCIMResourceSchemaManager.getInstance().getExtensionName());
     }
 
 
@@ -549,6 +553,7 @@ public class JSONDecoder {
         return  operationList;
     }
 
+    //todo[grishin]: this method uses some global schema infos
     public AbstractSCIMObject decode(String scimResourceString, SCIMResourceTypeSchema schema)
             throws CharonException, BadRequestException {
         try {

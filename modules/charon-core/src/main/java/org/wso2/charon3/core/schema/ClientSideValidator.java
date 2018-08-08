@@ -29,7 +29,7 @@ public class ClientSideValidator extends AbstractValidator {
     public static void validateRetrievedSCIMObject(AbstractSCIMObject scimObject,
                                                    SCIMResourceTypeSchema schema)
             throws CharonException, BadRequestException {
-        validateSCIMObjectForRequiredAttributes(scimObject, schema);
+        validateSCIMObjectForRequiredAttributes(scimObject, schema, true);
         validateSchemaList(scimObject, schema);
     }
 }

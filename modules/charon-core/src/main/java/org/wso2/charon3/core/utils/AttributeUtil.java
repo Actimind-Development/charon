@@ -16,8 +16,14 @@
 package org.wso2.charon3.core.utils;
 
 import org.json.JSONObject;
+import org.wso2.charon3.core.attributes.Attribute;
+import org.wso2.charon3.core.attributes.ComplexAttribute;
+import org.wso2.charon3.core.attributes.DefaultAttributeFactory;
+import org.wso2.charon3.core.attributes.MultiValuedAttribute;
+import org.wso2.charon3.core.attributes.SimpleAttribute;
 import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
+import org.wso2.charon3.core.objects.AbstractSCIMObject;
 import org.wso2.charon3.core.protocol.ResponseCodeConstants;
 import org.wso2.charon3.core.schema.AttributeSchema;
 import org.wso2.charon3.core.schema.SCIMAttributeSchema;
@@ -27,6 +33,7 @@ import org.wso2.charon3.core.schema.SCIMResourceTypeSchema;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -249,5 +256,111 @@ public class AttributeUtil {
         }
         return null;
     }
+
+    public static SimpleAttribute simple(AttributeSchema schema, Object value)
+            throws BadRequestException, CharonException {
+        if (schema.getMultiValued() || schema.getType() == SCIMDefinitions.DataType.COMPLEX) {
+            throw new CharonException("Shall be called for simple attributes only");
+        }
+        return (SimpleAttribute) DefaultAttributeFactory.createAttribute(schema,
+                new SimpleAttribute(schema.getName(), value));
+    }
+
+    public static MultiValuedAttribute strings(AttributeSchema schema, List<String> values)
+            throws BadRequestException, CharonException {
+        return multi(schema, values, SCIMDefinitions.DataType.STRING);
+    }
+
+    public static MultiValuedAttribute multi(AttributeSchema schema, List<?> values, SCIMDefinitions.DataType innerType)
+            throws CharonException, BadRequestException {
+        if (!schema.getMultiValued() || schema.getType() != innerType) {
+            throw new CharonException("Shall be called for multi-string attributes only");
+        }
+        MultiValuedAttribute attr = new MultiValuedAttribute(schema.getName());
+        if (innerType == SCIMDefinitions.DataType.COMPLEX) {
+            ArrayList<Attribute> attrs = new ArrayList<>();
+            for (Object o: values) {
+                attrs.add((Attribute) o);
+            }
+            attr.setAttributeValues(attrs);
+        } else {
+            attr.setAttributePrimitiveValues(new ArrayList<Object>(values));
+        }
+        return (MultiValuedAttribute) DefaultAttributeFactory.createAttribute(schema, attr);
+    }
+
+    public static MultiValuedAttribute ints(AttributeSchema schema, List<Integer> values)
+            throws BadRequestException, CharonException {
+        return multi(schema, values, SCIMDefinitions.DataType.INTEGER);
+    }
+
+    public static Attribute complex(AttributeSchema schema, List<Attribute> attributes)
+            throws CharonException, BadRequestException {
+        if (schema.getType() == SCIMDefinitions.DataType.COMPLEX) {
+            ComplexAttribute attr = new ComplexAttribute(schema.getName());
+            for (Attribute sub: attributes) {
+                attr.setSubAttribute(sub);
+            }
+            return DefaultAttributeFactory.createAttribute(schema, attr);
+        } else {
+            throw new CharonException("shall be called for multi or complex attrs");
+        }
+    }
+
+    public static String simpleString(AbstractSCIMObject obj, AttributeSchema schema) throws CharonException {
+        SimpleAttribute attr = (SimpleAttribute) obj.getAttribute(schema.getName());
+        return attr == null ? null : attr.getStringValue();
+    }
+
+    public static Integer simpleInt(AbstractSCIMObject obj, AttributeSchema schema) throws CharonException {
+        SimpleAttribute attr = (SimpleAttribute) obj.getAttribute(schema.getName());
+        return attr == null ? null : attr.getIntValue();
+    }
+
+    public static Boolean simpleBool(AbstractSCIMObject obj, AttributeSchema schema) throws CharonException {
+        SimpleAttribute attr = (SimpleAttribute) obj.getAttribute(schema.getName());
+        return attr == null ? null : attr.getBooleanValue();
+    }
+
+    public static Date simpleDate(AbstractSCIMObject obj, AttributeSchema schema) throws CharonException {
+        SimpleAttribute attr = (SimpleAttribute) obj.getAttribute(schema.getName());
+        return attr == null ? null : attr.getDateValue();
+    }
+
+    public static String simpleString(ComplexAttribute attribute, AttributeSchema schema) throws CharonException {
+        SimpleAttribute attr = (SimpleAttribute) attribute.getSubAttribute(schema.getName());
+        return attr == null ? null : attr.getStringValue();
+    }
+
+    public static Integer simpleInt(ComplexAttribute attribute, AttributeSchema schema) throws CharonException {
+        SimpleAttribute attr = (SimpleAttribute) attribute.getSubAttribute(schema.getName());
+        return attr == null ? null : attr.getIntValue();
+    }
+
+    public static Boolean simpleBool(ComplexAttribute attribute, AttributeSchema schema) throws CharonException {
+        SimpleAttribute attr = (SimpleAttribute) attribute.getSubAttribute(schema.getName());
+        return attr == null ? null : attr.getBooleanValue();
+    }
+
+    public static Date simpleDate(ComplexAttribute attribute, AttributeSchema schema) throws CharonException {
+        SimpleAttribute attr = (SimpleAttribute) attribute.getSubAttribute(schema.getName());
+        return attr == null ? null : attr.getDateValue();
+    }
+
+
+    public static <T> List<T> multi(AbstractSCIMObject obj, AttributeSchema schema) {
+        MultiValuedAttribute attr = (MultiValuedAttribute) obj.getAttribute(schema.getName());
+        List<T> out = new ArrayList<>();
+        if (attr != null) {
+            for (Object item: attr.getAttributePrimitiveValues()) {
+                out.add((T) item);
+            }
+            for (Object item: attr.getAttributeValues()) {
+                out.add((T) item);
+            }
+        }
+        return out;
+    }
+
 
 }

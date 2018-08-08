@@ -74,7 +74,7 @@ public class SCIMAttributeSchema implements AttributeSchema, Serializable {
         this.mutability = mutability;
         this.returned = returned;
         this.uniqueness = uniqueness;
-        this.subAttributes = subAttributes;
+        this.subAttributes = subAttributes == null || subAttributes.isEmpty() ? null : subAttributes;
         this.canonicalValues = canonicalValues;
         this.referenceTypes = referenceTypes;
     }

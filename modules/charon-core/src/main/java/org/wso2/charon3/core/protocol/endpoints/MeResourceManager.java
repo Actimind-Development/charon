@@ -49,6 +49,9 @@ import java.util.Map;
 
 public class MeResourceManager extends AbstractResourceManager {
 
+    public MeResourceManager() {
+        setSchema(SCIMResourceSchemaManager.getInstance().getUserResourceSchema());
+    }
 
     @Override
     public SCIMResponse get(String userName, UserManager userManager, String attributes, String excludeAttributes) {
@@ -59,7 +62,7 @@ public class MeResourceManager extends AbstractResourceManager {
 
             //obtain the schema corresponding to user
             // unless configured returns core-user schema or else returns extended user schema)
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //get the URIs of required attributes which must be given a value
 
             Map<String, Boolean> requiredAttributes = ResourceManagerUtil.getOnlyRequiredAttributesURIs(
@@ -108,7 +111,7 @@ public class MeResourceManager extends AbstractResourceManager {
 
             //obtain the schema corresponding to user
             // unless configured returns core-user schema or else returns extended user schema)
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //get the URIs of required attributes which must be given a value
             Map<String, Boolean> requiredAttributes = ResourceManagerUtil.getOnlyRequiredAttributesURIs(
                     (SCIMResourceTypeSchema)
@@ -220,7 +223,7 @@ public class MeResourceManager extends AbstractResourceManager {
             //obtain the json decoder.
             decoder = getDecoder();
 
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
 
             //get the URIs of required attributes which must be given a value
             Map<String, Boolean> requiredAttributes = ResourceManagerUtil.getOnlyRequiredAttributesURIs(
@@ -304,7 +307,7 @@ public class MeResourceManager extends AbstractResourceManager {
             //decode the SCIM User object, encoded in the submitted payload.
             List<PatchOperation> opList = decoder.decodeRequest(scimObjectString);
 
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //get the user from the user core
             User oldUser = userManager.getMe(existingId, ResourceManagerUtil.getAllAttributeURIs(schema));
             if (oldUser == null) {
@@ -411,7 +414,7 @@ public class MeResourceManager extends AbstractResourceManager {
             JSONDecoder decoder = getDecoder();
             //obtain the schema corresponding to user
             // unless configured returns core-user schema or else returns extended user schema)
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //decode the SCIM User object, encoded in the submitted payload.
             User user = (User) decoder.decodeResource(scimObjectString, schema, new User());
 

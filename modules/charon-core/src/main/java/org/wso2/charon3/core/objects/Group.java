@@ -60,7 +60,7 @@ public class Group extends AbstractSCIMObject {
     public void setDisplayName(String displayName) throws CharonException, BadRequestException {
         if (this.isAttributeExist(SCIMConstants.GroupSchemaConstants.DISPLAY_NAME)) {
             ((SimpleAttribute) this.attributeList.get(SCIMConstants.GroupSchemaConstants.DISPLAY_NAME)).
-                    updateValue(displayName);
+                    setValue(displayName);
         } else {
             SimpleAttribute displayAttribute = new SimpleAttribute(
                     SCIMConstants.GroupSchemaConstants.DISPLAY_NAME, displayName);

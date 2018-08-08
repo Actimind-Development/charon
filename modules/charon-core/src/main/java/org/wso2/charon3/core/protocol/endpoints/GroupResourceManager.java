@@ -61,6 +61,9 @@ public class GroupResourceManager extends AbstractResourceManager {
 
     private static final Logger logger = LoggerFactory.getLogger(GroupResourceManager.class);
 
+    public GroupResourceManager() {
+        setSchema(SCIMResourceSchemaManager.getInstance().getGroupResourceSchema());
+    }
     /*
      * Retrieves a group resource given an unique group id. Mapped to HTTP GET request.
      *
@@ -77,7 +80,7 @@ public class GroupResourceManager extends AbstractResourceManager {
             //obtain the correct encoder according to the format requested.
             encoder = getEncoder();
             // returns core-group schema
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getGroupResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //get the URIs of required attributes which must be given a value
             Map<String, Boolean> requiredAttributes = ResourceManagerUtil.getOnlyRequiredAttributesURIs(
                     (SCIMResourceTypeSchema)
@@ -133,7 +136,7 @@ public class GroupResourceManager extends AbstractResourceManager {
             //obtain the json decoder
             decoder = getDecoder();
             // returns core-group schema
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getGroupResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //get the URIs of required attributes which must be given a value
             Map<String, Boolean> requiredAttributes = ResourceManagerUtil.getOnlyRequiredAttributesURIs(
                     (SCIMResourceTypeSchema)
@@ -262,7 +265,7 @@ public class GroupResourceManager extends AbstractResourceManager {
             }
 
             // unless configured returns core-user schema or else returns extended user schema)
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getGroupResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             if (filter != null) {
                 filterTreeManager = new FilterTreeManager(filter, schema);
                 rootNode = filterTreeManager.buildTree();
@@ -338,7 +341,7 @@ public class GroupResourceManager extends AbstractResourceManager {
         } catch (IOException e) {
             String error = "Error in tokenization of the input filter";
             CharonException charonException = new CharonException(error);
-            return AbstractResourceManager.encodeSCIMException(charonException);
+            return encodeSCIMException(charonException);
         }
     }
 
@@ -360,7 +363,7 @@ public class GroupResourceManager extends AbstractResourceManager {
             decoder = getDecoder();
 
             // return core group schema
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getGroupResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
 
             //create the search request object
             SearchRequest searchRequest = decoder.decodeSearchRequestBody(resourceString, schema);
@@ -425,15 +428,15 @@ public class GroupResourceManager extends AbstractResourceManager {
                 throw new InternalErrorException(error);
             }
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotImplementedException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         }
     }
 
@@ -460,7 +463,7 @@ public class GroupResourceManager extends AbstractResourceManager {
             //obtain the json decoder.
             decoder = getDecoder();
 
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getGroupResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //get the URIs of required attributes which must be given a value
             Map<String, Boolean> requiredAttributes = ResourceManagerUtil.getOnlyRequiredAttributesURIs(
                     (SCIMResourceTypeSchema)
@@ -541,7 +544,7 @@ public class GroupResourceManager extends AbstractResourceManager {
             //decode the SCIM User object, encoded in the submitted payload.
             List<PatchOperation> opList = decoder.decodeRequest(scimObjectString);
 
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getGroupResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //get the group from the user core
             Group oldGroup = userManager.getGroup(existingId, ResourceManagerUtil.getAllAttributeURIs(schema));
             if (oldGroup == null) {
@@ -628,18 +631,18 @@ public class GroupResourceManager extends AbstractResourceManager {
             return new SCIMResponse(ResponseCodeConstants.CODE_OK, encodedGroup, httpHeaders);
 
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotImplementedException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (RuntimeException e) {
             CharonException e1 = new CharonException("Error in performing the patch operation on group resource.", e);
-            return AbstractResourceManager.encodeSCIMException(e1);
+            return encodeSCIMException(e1);
         }
     }
 

@@ -88,7 +88,7 @@ public class SCIMSchemaDefinitions {
     public static final SCIMAttributeSchema ID =
             SCIMAttributeSchema.createSCIMAttributeSchema(SCIMConstants.CommonSchemaConstants.ID_URI,
                     SCIMConstants.CommonSchemaConstants.ID,
-                    SCIMDefinitions.DataType.STRING, false, SCIMConstants.CommonSchemaConstants.ID_DESC, true, true,
+                    SCIMDefinitions.DataType.STRING, false, SCIMConstants.CommonSchemaConstants.ID_DESC, false, true,
                     SCIMDefinitions.Mutability.READ_ONLY, SCIMDefinitions.Returned.ALWAYS,
                     SCIMDefinitions.Uniqueness.SERVER, null, null, null);
 

@@ -389,6 +389,7 @@ public class JSONEncoder {
         userResourceTypeObject.put(
                 SCIMConstants.ResourceTypeSchemaConstants.SCHEMA, SCIMConstants.USER_CORE_SCHEMA_URI);
 
+        //todo: pass extension info outside
         if (SCIMResourceSchemaManager.getInstance().isExtensionSet()) {
             JSONObject extensionSchemaObject = new JSONObject();
 

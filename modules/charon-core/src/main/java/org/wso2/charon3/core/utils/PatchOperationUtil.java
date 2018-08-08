@@ -42,6 +42,8 @@ import org.wso2.charon3.core.schema.ServerSideValidator;
 import org.wso2.charon3.core.utils.codeutils.ExpressionNode;
 import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +85,7 @@ public class PatchOperationUtil {
             ExpressionNode expressionNode = new ExpressionNode();
             expressionNode.setAttributeValue(filterParts[0]);
             expressionNode.setOperation(filterParts[1]);
-            expressionNode.setValue(filterParts[2]);
+            expressionNode.setValue(withoutQuotes(filterParts[2]));
 
             if (expressionNode.getOperation().equalsIgnoreCase((SCIMConstants.OperationalConstants.EQ).trim())) {
 
@@ -353,7 +355,9 @@ public class PatchOperationUtil {
                              valuesList.iterator(); iterator.hasNext();) {
                             Object item = iterator.next();
                             //we only support "EQ" filter
-                            if (item.equals(expressionNode.getValue())) {
+                            Object value = AttributeUtil.getAttributeValueFromString(expressionNode.getValue(),
+                                    attribute.getType());
+                            if (item.equals(value)) {
                                 if (attribute.getMutability().equals(SCIMDefinitions.Mutability.READ_ONLY) ||
                                         attribute.getRequired().equals(true)) {
                                     throw new BadRequestException
@@ -392,8 +396,9 @@ public class PatchOperationUtil {
 
                                 Attribute subAttribute = iterator.next();
                                 if (subAttribute.getName().equals(expressionNode.getAttributeValue())) {
-                                    if (((SimpleAttribute)
-                                            (subAttribute)).getValue().equals(expressionNode.getValue())) {
+                                    Object value = AttributeUtil.getAttributeValueFromString(expressionNode.getValue(),
+                                            subAttribute.getType());
+                                    if (((SimpleAttribute) (subAttribute)).getValue().equals(value)) {
                                         if (subValue.getMutability().equals(SCIMDefinitions.Mutability.READ_ONLY) ||
                                                 subValue.getRequired().equals(true)) {
                                             throw new BadRequestException
@@ -597,6 +602,89 @@ public class PatchOperationUtil {
         return oldResource;
     }
 
+    private static AbstractSCIMObject getObjectToAdd(PatchOperation operation, JSONDecoder decoder,
+                                                     SCIMResourceTypeSchema schema)
+            throws BadRequestException, CharonException, JSONException, InternalErrorException {
+        AbstractSCIMObject out = new AbstractSCIMObject();
+        out.setSchemas(schema.getSchemasList());
+        if (operation.getPath().contains("[")) {
+            throw new BadRequestException("Add into nested multi-valued attributes not supported",
+                    ResponseCodeConstants.INVALID_PATH);
+        }
+        List<String> pathParts = new ArrayList<>(Arrays.asList(operation.getPath().split("[\\.]")));
+
+        ComplexAttribute referenced = null;
+        AttributeSchema referencedSchema = null;
+        while (!pathParts.isEmpty()) {
+            String part = pathParts.remove(0);
+            boolean isLast = pathParts.isEmpty();
+            List<? extends AttributeSchema> schemaList = referencedSchema == null ? schema.getAttributesList()
+                    : referencedSchema.getSubAttributeSchemas();
+            for (AttributeSchema attrSchema: schemaList) {
+                if (attrSchema.getName().equalsIgnoreCase(part)) {
+                    Attribute attribute;
+                    if (isLast) {
+                        //parse and add value
+                        //4 cases: complex + object, complex + array, simple + object, simple + array
+                        if (attrSchema.getMultiValued()) {
+                            attribute = new MultiValuedAttribute(attrSchema.getName());
+                            if (attrSchema.getType() == SCIMDefinitions.DataType.COMPLEX) {
+                                List<Attribute> attributes = new ArrayList<>();
+                                if (operation.getValues() instanceof JSONArray) {
+                                    JSONArray array = ((JSONArray) operation.getValues());
+                                    for (int i = 0; i < array.length(); i++) {
+                                        attributes.add(
+                                                decoder.buildComplexAttribute(attrSchema, array.getJSONObject(i))
+                                        );
+                                    }
+                                } else {
+                                    attributes.add(decoder.buildComplexAttribute(attrSchema,
+                                            (JSONObject) operation.getValues()));
+                                }
+                                ((MultiValuedAttribute) attribute).setAttributeValues(attributes);
+                            } else {
+                                List<Object> primitiveValues = new ArrayList<>();
+                                if (operation.getValues() instanceof JSONArray) {
+                                    JSONArray array = ((JSONArray) operation.getValues());
+                                    for (int i = 0; i < array.length(); i++) {
+                                        primitiveValues.add(array.opt(i));
+                                    }
+                                } else {
+                                    primitiveValues.add(operation.getValues());
+                                }
+                                ((MultiValuedAttribute) attribute).setAttributePrimitiveValues(primitiveValues);
+                            }
+                            attribute = DefaultAttributeFactory.createAttribute(attrSchema,
+                                    (MultiValuedAttribute) attribute);
+
+                        } else if (attrSchema.getType() == SCIMDefinitions.DataType.COMPLEX) {
+                            attribute = decoder.buildComplexAttribute(attrSchema,
+                                    (JSONObject) operation.getValues());
+                        } else {
+                            attribute = decoder.buildSimpleAttribute(attrSchema, operation.getValues());
+                        }
+
+                    } else if (attrSchema.getType() == SCIMDefinitions.DataType.COMPLEX) {
+                        attribute = DefaultAttributeFactory.createAttribute(attrSchema,
+                                new ComplexAttribute(attrSchema.getName()));
+                        referenced = (ComplexAttribute) attribute;
+                        referencedSchema = attrSchema;
+                    } else {
+                        throw new BadRequestException("Path part \"" + part + "\" points to non-complex attribute");
+                    }
+
+                    if (referenced == null) {
+                        out.setAttribute(attribute);
+                    } else {
+                        referenced.setSubAttribute(attribute);
+                    }
+                    break;
+                }
+            }
+        }
+
+        return out;
+    }
 
     /*
      * This method corresponds to the add operation in patch requests.
@@ -610,8 +698,11 @@ public class PatchOperationUtil {
                                                 AbstractSCIMObject oldResource, AbstractSCIMObject copyOfOldResource,
                                                 SCIMResourceTypeSchema schema)
             throws CharonException, BadRequestException {
+        //todo: I do not see any usage of "operation.path" here.
+        // I change the whole logic to support at least first-level attributes
         try {
-            AbstractSCIMObject attributeHoldingSCIMObject = decoder.decode(operation.getValues().toString(), schema);
+            //AbstractSCIMObject attributeHoldingSCIMObject =  decoder.decode(operation.getValues().toString(), schema);
+            AbstractSCIMObject attributeHoldingSCIMObject = getObjectToAdd(operation, decoder, schema);
             if (oldResource != null) {
                 for (String attributeName : attributeHoldingSCIMObject.getAttributeList().keySet()) {
                     Attribute oldAttribute = oldResource.getAttribute(attributeName);
@@ -722,7 +813,7 @@ public class PatchOperationUtil {
                             // this is the simple attribute case.replace the value
                             ((SimpleAttribute) oldAttribute).setValue
                                     (((SimpleAttribute) attributeHoldingSCIMObject.getAttribute
-                                            (oldAttribute.getName())).getValue());
+                                            (oldAttribute.getName())));
                         }
                     } else {
                         //if the attribute is not already set, set it.
@@ -738,11 +829,13 @@ public class PatchOperationUtil {
                         (copyOfOldResource, oldResource, schema);
 
                 return validatedResource;
-            } else  {
+            } else {
                 throw new CharonException("Error in getting the old resource.");
             }
+        } catch (JSONException | InternalErrorException e) {
+            throw new CharonException(e.getMessage(), e);
         } catch (BadRequestException e) {
-            throw new BadRequestException(ResponseCodeConstants.INVALID_SYNTAX);
+            throw new BadRequestException(e.getDetail(), ResponseCodeConstants.INVALID_SYNTAX);
         }
     }
 
@@ -858,7 +951,7 @@ public class PatchOperationUtil {
                         throw new BadRequestException("Can not replace a immutable attribute or a read-only attribute",
                                 ResponseCodeConstants.MUTABILITY);
                     } else {
-                        ((SimpleAttribute) attribute).setValue(operation.getValues().toString());
+                        ((SimpleAttribute) attribute).setValueFromObject(operation.getValues());
                     }
                 } else {
                     if (attribute.getMutability().equals(SCIMDefinitions.Mutability.READ_ONLY) ||
@@ -868,10 +961,14 @@ public class PatchOperationUtil {
                     } else {
                         ((MultiValuedAttribute) attribute).deletePrimitiveValues();
                         JSONArray jsonArray = null;
-                        try {
-                            jsonArray = new JSONArray(operation.getValues());
-                        } catch (JSONException e) {
-                            throw new BadRequestException(ResponseCodeConstants.INVALID_SYNTAX);
+                        if (operation.getValues() instanceof JSONArray) {
+                            jsonArray = (JSONArray) operation.getValues();
+                        } else {
+                            try {
+                                jsonArray = new JSONArray(operation.getValues());
+                            } catch (JSONException e) {
+                                throw new BadRequestException(ResponseCodeConstants.INVALID_SYNTAX);
+                            }
                         }
                         for (int i = 0; i < jsonArray.length(); i++) {
                             try {
@@ -1045,7 +1142,7 @@ public class PatchOperationUtil {
                                     }
                                 }
                             } else {
-                                ((SimpleAttribute) subAttribute).setValue(operation.getValues());
+                                ((SimpleAttribute) subAttribute).setValueFromObject(operation.getValues());
                             }
                         }
                     } else {
@@ -1391,7 +1488,7 @@ public class PatchOperationUtil {
                     Attribute subSubAttribute  = ((ComplexAttribute) subAttribute).getSubAttribute(attributeParts[2]);
 
                     if (subSubAttribute != null) {
-                        ((SimpleAttribute) subSubAttribute).setValue(operation.getValues());
+                        ((SimpleAttribute) subSubAttribute).setValueFromObject(operation.getValues());
                     } else {
                         AttributeSchema subSubAttributeSchema = SchemaUtil.getAttributeSchema(
                                 attributeParts[0] + "." + attributeParts[1] + "." + attributeParts[2], schema);
@@ -1660,7 +1757,7 @@ public class PatchOperationUtil {
             ExpressionNode expressionNode = new ExpressionNode();
             expressionNode.setAttributeValue(filterParts[0]);
             expressionNode.setOperation(filterParts[1]);
-            expressionNode.setValue(filterParts[2]);
+            expressionNode.setValue(withoutQuotes(filterParts[2]));
 
             if (expressionNode.getOperation().equalsIgnoreCase((SCIMConstants.OperationalConstants.EQ).trim())) {
                 if (parts.length == 3) {
@@ -1775,7 +1872,8 @@ public class PatchOperationUtil {
                                             ((MultiValuedAttribute) replacingAttribute).
                                                     setAttributePrimitiveValue(operation.getValues());
                                         } else  {
-                                            ((SimpleAttribute) (replacingAttribute)).setValue(operation.getValues());
+                                            ((SimpleAttribute) (replacingAttribute))
+                                                    .setValueFromObject(operation.getValues());
                                         }
                                         isValueFound = true;
                                     }
@@ -1990,7 +2088,8 @@ public class PatchOperationUtil {
                                             ((MultiValuedAttribute) replacingAttribute).
                                                     setAttributePrimitiveValue(operation.getValues());
                                         } else  {
-                                            ((SimpleAttribute) (replacingAttribute)).setValue(operation.getValues());
+                                            ((SimpleAttribute) (replacingAttribute))
+                                                    .setValueFromObject(operation.getValues());
                                         }
                                         isValueFound = true;
                                     }
@@ -2519,7 +2618,7 @@ public class PatchOperationUtil {
                                 // this is the simple attribute case.replace the value
                                 ((SimpleAttribute) oldAttribute).setValue
                                         (((SimpleAttribute) attributeHoldingSCIMObject.getAttribute
-                                                (oldAttribute.getName())).getValue());
+                                                (oldAttribute.getName())));
                             }
                         }
                     } else {
@@ -2537,5 +2636,13 @@ public class PatchOperationUtil {
         } catch (BadRequestException | CharonException e) {
             throw new CharonException("Error in performing the add operation", e);
         }
+    }
+
+    private static String withoutQuotes(String str) {
+        str = str.trim();
+        if (str.startsWith("\"") && str.endsWith("\"")) {
+            return str.substring(1, str.length() - 2);
+        }
+        return str;
     }
 }

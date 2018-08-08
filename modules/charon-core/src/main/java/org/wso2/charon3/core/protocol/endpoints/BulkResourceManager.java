@@ -79,11 +79,11 @@ public class BulkResourceManager extends AbstractResourceManager {
             return new SCIMResponse(ResponseCodeConstants.CODE_OK, finalEncodedResponse, responseHeaders);
 
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         }
     }
 

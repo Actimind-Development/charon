@@ -582,4 +582,9 @@ public class AbstractSCIMObject implements SCIMObject {
         return complexValue;
     }
 
+    public void setSchemas(List<String> schemasList) {
+        for (String schema: schemasList) {
+            setSchema(schema);
+        }
+    }
 }

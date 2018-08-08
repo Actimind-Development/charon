@@ -51,9 +51,11 @@ public abstract class AbstractValidator {
      *
      * @param scimObject
      * @param resourceSchema
+     * @param isReturnedFromServer if true then also checks attributes with Returned = ALWAYS
      */
     public static void validateSCIMObjectForRequiredAttributes(AbstractSCIMObject scimObject,
-                                                               ResourceTypeSchema resourceSchema)
+                                                               ResourceTypeSchema resourceSchema,
+                                                               boolean isReturnedFromServer)
             throws BadRequestException, CharonException {
         //get attributes from schema.
         List<AttributeSchema> attributeSchemaList = resourceSchema.getAttributesList();
@@ -61,12 +63,22 @@ public abstract class AbstractValidator {
         Map<String, Attribute> attributeList = scimObject.getAttributeList();
         for (AttributeSchema attributeSchema : attributeSchemaList) {
             //check for required attributes.
+            //todo: when we return entity, shall be check required flag? or "returned" flag is enough?
+            // what if required = true and returned = "never"?
             if (attributeSchema.getRequired()) {
                 if (!attributeList.containsKey(attributeSchema.getName())) {
                     String error = "Required attribute " + attributeSchema.getName() + " is missing in the SCIM " +
                             "Object.";
                     throw new BadRequestException(error, ResponseCodeConstants.INVALID_VALUE);
                 }
+            }
+            if (isReturnedFromServer && attributeSchema.getReturned() == SCIMDefinitions.Returned.ALWAYS) {
+                if (!attributeList.containsKey(attributeSchema.getName())) {
+                    String error = "Required returned attribute " + attributeSchema.getName() +
+                            " is missing in the SCIM Object.";
+                    throw new CharonException(error);
+                }
+
             }
             //check for required sub attributes.
             AbstractAttribute attribute = (AbstractAttribute) attributeList.get(attributeSchema.getName());
@@ -812,6 +824,7 @@ public abstract class AbstractValidator {
         List<SCIMAttributeSchema> subAttributeSchemaList = attributeSchema.getSubAttributeSchemas();
 
         if (subAttributeSchemaList != null) {
+            //todo: pass extension info outside. btw, cannot it be in schema?
             if (SCIMResourceSchemaManager.getInstance().getExtensionName() != null) {
                 if (attributeSchema.getName().equals(SCIMResourceSchemaManager.getInstance().getExtensionName())) {
                     checkIfReadOnlyAndImmutableExtensionAttributesModified(subAttributeSchemaList, newAttribute,

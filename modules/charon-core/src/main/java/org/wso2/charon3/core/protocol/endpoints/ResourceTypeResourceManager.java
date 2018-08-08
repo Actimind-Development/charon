@@ -43,6 +43,10 @@ import java.util.Map;
  */
 public class ResourceTypeResourceManager extends AbstractResourceManager {
 
+    public ResourceTypeResourceManager() {
+        setSchema(SCIMResourceSchemaManager.getInstance().getResourceTypeResourceSchema());
+    }
+
     /*
      * Retrieves a resource type
      *
@@ -67,7 +71,7 @@ public class ResourceTypeResourceManager extends AbstractResourceManager {
             JSONDecoder decoder = getDecoder();
 
             // get the service provider config schema
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getResourceTypeResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //create a string in json format for user resource type with relevant values
             String scimUserObjectString = encoder.buildUserResourceTypeJsonBody();
             //create a string in json format for group resource type with relevant values
@@ -76,12 +80,14 @@ public class ResourceTypeResourceManager extends AbstractResourceManager {
             AbstractSCIMObject userResourceTypeObject = (AbstractSCIMObject) decoder.decodeResource(
                     scimUserObjectString, schema, new AbstractSCIMObject());
             //add meta data
-            userResourceTypeObject = ServerSideValidator.validateResourceTypeSCIMObject(userResourceTypeObject);
+            userResourceTypeObject = ServerSideValidator.validateResourceTypeSCIMObject(userResourceTypeObject,
+                    getResourceEndpointURL(SCIMConstants.RESOURCE_TYPE_ENDPOINT));
             //build the group abstract scim object
             AbstractSCIMObject groupResourceTypeObject = (AbstractSCIMObject) decoder.decodeResource(
                     scimGroupObjectString, schema, new AbstractSCIMObject());
             //add meta data
-            groupResourceTypeObject = ServerSideValidator.validateResourceTypeSCIMObject(groupResourceTypeObject);
+            groupResourceTypeObject = ServerSideValidator.validateResourceTypeSCIMObject(groupResourceTypeObject,
+                    getResourceEndpointURL(SCIMConstants.RESOURCE_TYPE_ENDPOINT));
             //build the root abstract scim object
             AbstractSCIMObject resourceTypeObject = buildCombinedResourceType(userResourceTypeObject,
                     groupResourceTypeObject);

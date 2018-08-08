@@ -98,7 +98,7 @@ public class DefaultAttributeFactory {
      * @return boolean
      * @throws BadRequestException
      */
-    protected static boolean isAttributeDataTypeValid(Object attributeValue,
+    public static boolean isAttributeDataTypeValid(Object attributeValue,
                                                       SCIMDefinitions.DataType attributeDataType)
                                                 throws BadRequestException {
         switch (attributeDataType) {

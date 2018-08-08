@@ -63,7 +63,7 @@ public class UserResourceManager extends AbstractResourceManager {
 
 
     public UserResourceManager() {
-
+        setSchema(SCIMResourceSchemaManager.getInstance().getUserResourceSchema());
     }
 
     /*
@@ -81,7 +81,7 @@ public class UserResourceManager extends AbstractResourceManager {
 
             //obtain the schema corresponding to user
             // unless configured returns core-user schema or else returns extended user schema)
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
 
             //get the URIs of required attributes which must be given a value
             Map<String, Boolean> requiredAttributes = ResourceManagerUtil.getOnlyRequiredAttributesURIs(
@@ -109,11 +109,11 @@ public class UserResourceManager extends AbstractResourceManager {
             return new SCIMResponse(ResponseCodeConstants.CODE_OK, encodedUser, responseHeaders);
 
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         }
     }
 
@@ -136,7 +136,7 @@ public class UserResourceManager extends AbstractResourceManager {
 
             //obtain the schema corresponding to user
             // unless configured returns core-user schema or else returns extended user schema)
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //decode the SCIM User object, encoded in the submitted payload.
             User user = (User) decoder.decodeResource(scimObjectString, schema, new User());
             //validate the created user.
@@ -186,15 +186,15 @@ public class UserResourceManager extends AbstractResourceManager {
             if (e.getStatus() == -1) {
                 e.setStatus(ResponseCodeConstants.CODE_INTERNAL_ERROR);
             }
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (ConflictException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         }
     }
 
@@ -220,15 +220,15 @@ public class UserResourceManager extends AbstractResourceManager {
                 throw new InternalErrorException(error);
             }
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotImplementedException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         }
     }
 
@@ -278,7 +278,7 @@ public class UserResourceManager extends AbstractResourceManager {
             }
 
             // unless configured returns core-user schema or else returns extended user schema)
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
 
             if (filter != null) {
                 filterTreeManager = new FilterTreeManager(filter, schema);
@@ -341,19 +341,19 @@ public class UserResourceManager extends AbstractResourceManager {
                 throw new InternalErrorException(error);
             }
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotImplementedException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (IOException e) {
             String error = "Error in tokenization of the input filter";
             CharonException charonException = new CharonException(error);
-            return AbstractResourceManager.encodeSCIMException(charonException);
+            return encodeSCIMException(charonException);
         }
     }
 
@@ -374,7 +374,7 @@ public class UserResourceManager extends AbstractResourceManager {
             decoder = getDecoder();
 
             // unless configured returns core-user schema or else returns extended user schema)
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //create the search request object
             SearchRequest searchRequest = decoder.decodeSearchRequestBody(resourceString, schema);
 
@@ -434,15 +434,15 @@ public class UserResourceManager extends AbstractResourceManager {
                 throw new InternalErrorException(error);
             }
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotImplementedException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         }
     }
 
@@ -467,7 +467,7 @@ public class UserResourceManager extends AbstractResourceManager {
             //obtain the json decoder.
             decoder = getDecoder();
 
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
 
             //get the URIs of required attributes which must be given a value
             Map<String, Boolean> requiredAttributes = ResourceManagerUtil.getOnlyRequiredAttributesURIs(
@@ -516,15 +516,15 @@ public class UserResourceManager extends AbstractResourceManager {
             return new SCIMResponse(ResponseCodeConstants.CODE_OK, encodedUser, httpHeaders);
 
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotImplementedException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         }
     }
 
@@ -551,7 +551,7 @@ public class UserResourceManager extends AbstractResourceManager {
             //decode the SCIM User object, encoded in the submitted payload.
             List<PatchOperation> opList = decoder.decodeRequest(scimObjectString);
 
-            SCIMResourceTypeSchema schema = SCIMResourceSchemaManager.getInstance().getUserResourceSchema();
+            SCIMResourceTypeSchema schema = getSchema();
             //get the user from the user core
             User oldUser = userManager.getUser(existingId, ResourceManagerUtil.getAllAttributeURIs(schema));
             if (oldUser == null) {
@@ -635,18 +635,18 @@ public class UserResourceManager extends AbstractResourceManager {
             //put the URI of the User object in the response header parameter.
             return new SCIMResponse(ResponseCodeConstants.CODE_OK, encodedUser, httpHeaders);
         } catch (NotFoundException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (BadRequestException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (NotImplementedException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (CharonException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
-            return AbstractResourceManager.encodeSCIMException(e);
+            return encodeSCIMException(e);
         } catch (RuntimeException e) {
             CharonException e1 = new CharonException("Error in performing the patch operation on user resource.", e);
-            return AbstractResourceManager.encodeSCIMException(e1);
+            return encodeSCIMException(e1);
         }
     }
 

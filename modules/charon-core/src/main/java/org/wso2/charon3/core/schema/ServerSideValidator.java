@@ -21,11 +21,8 @@ import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.exceptions.NotFoundException;
 import org.wso2.charon3.core.objects.AbstractSCIMObject;
 import org.wso2.charon3.core.objects.User;
-import org.wso2.charon3.core.protocol.endpoints.AbstractResourceManager;
-import org.wso2.charon3.core.utils.AttributeUtil;
 
 import java.util.Date;
-import java.util.UUID;
 
 /**
  * Server Side Validator.
@@ -51,7 +48,8 @@ public class ServerSideValidator extends AbstractValidator {
         //remove any read only attributes
         removeAnyReadOnlyAttributes(scimObject, resourceSchema);
         //add created and last modified dates
-        String id = UUID.randomUUID().toString();
+        //todo[grishin]: following is bad - "validate" shall not add anything to object! at least it shall make copy
+        /*String id = UUID.randomUUID().toString();
         scimObject.setId(id);
         Date date = new Date();
         //set the created date and time
@@ -69,9 +67,9 @@ public class ServerSideValidator extends AbstractValidator {
                     SCIMConstants.GROUP_ENDPOINT), scimObject.getId());
             scimObject.setLocation(location);
             scimObject.setResourceType(SCIMConstants.GROUP);
-        }
+        }*/
         //check for required attributes
-        validateSCIMObjectForRequiredAttributes(scimObject, resourceSchema);
+        validateSCIMObjectForRequiredAttributes(scimObject, resourceSchema, false);
         validateSchemaList(scimObject, resourceSchema);
     }
 
@@ -102,7 +100,7 @@ public class ServerSideValidator extends AbstractValidator {
                                                                  reuqestedAttributes,
                                                          String requestedExcludingAttributes)
             throws BadRequestException, CharonException {
-        validateSCIMObjectForRequiredAttributes(scimObject, resourceSchema);
+        validateSCIMObjectForRequiredAttributes(scimObject, resourceSchema, true);
         validateReturnedAttributes(scimObject, reuqestedAttributes, requestedExcludingAttributes);
     }
 
@@ -120,7 +118,7 @@ public class ServerSideValidator extends AbstractValidator {
                                                    SCIMResourceTypeSchema resourceSchema, String reuqestedAttributes,
                                                    String requestedExcludingAttributes)
             throws BadRequestException, CharonException {
-        validateSCIMObjectForRequiredAttributes(scimObject, resourceSchema);
+        validateSCIMObjectForRequiredAttributes(scimObject, resourceSchema, true);
         validateReturnedAttributes(scimObject, reuqestedAttributes, requestedExcludingAttributes);
         validateSchemaList(scimObject, resourceSchema);
     }
@@ -148,14 +146,18 @@ public class ServerSideValidator extends AbstractValidator {
         //check for read only and immutable attributes
         validatedObject = checkIfReadOnlyAndImmutableAttributesModified(oldObject, newObject, resourceSchema);
         //copy meta attribute from old to new
-        validatedObject.setAttribute(oldObject.getAttribute(SCIMConstants.CommonSchemaConstants.META));
+        if (oldObject.isAttributeExist(SCIMConstants.CommonSchemaConstants.META)) {
+            validatedObject.setAttribute(oldObject.getAttribute(SCIMConstants.CommonSchemaConstants.META));
+            //edit last modified date
+            Date date = new Date();
+            validatedObject.setLastModified(date);
+        }
         //copy id attribute to new group object
-        validatedObject.setAttribute(oldObject.getAttribute(SCIMConstants.CommonSchemaConstants.ID));
-        //edit last modified date
-        Date date = new Date();
-        validatedObject.setLastModified(date);
+        if (oldObject.isAttributeExist(SCIMConstants.CommonSchemaConstants.ID)) {
+            validatedObject.setAttribute(oldObject.getAttribute(SCIMConstants.CommonSchemaConstants.ID));
+        }
         //check for required attributes.
-        validateSCIMObjectForRequiredAttributes(newObject, resourceSchema);
+        validateSCIMObjectForRequiredAttributes(newObject, resourceSchema, false);
         //check for schema list
         validateSchemaList(validatedObject, resourceSchema);
 
@@ -166,17 +168,18 @@ public class ServerSideValidator extends AbstractValidator {
      * This method is to add meta data to the resource type resource
      *
      * @param scimObject
+     * @param resourceTypeUrl
      * @return
      * @throws NotFoundException
      * @throws BadRequestException
      * @throws CharonException
      */
-    public static AbstractSCIMObject validateResourceTypeSCIMObject(AbstractSCIMObject scimObject)
+    public static AbstractSCIMObject validateResourceTypeSCIMObject(AbstractSCIMObject scimObject,
+                                                                    String resourceTypeUrl)
             throws NotFoundException, BadRequestException, CharonException {
         String endpoint = (String) (((SimpleAttribute) (scimObject.getAttribute
                 (SCIMConstants.ResourceTypeSchemaConstants.NAME))).getValue());
-        String location = createLocationHeader(AbstractResourceManager.getResourceEndpointURL(
-                SCIMConstants.RESOURCE_TYPE_ENDPOINT), endpoint);
+        String location = createLocationHeader(resourceTypeUrl, endpoint);
         scimObject.setLocation(location);
         scimObject.setResourceType(SCIMConstants.RESOURCE_TYPE);
         return scimObject;

@@ -83,10 +83,10 @@ public class User extends AbstractSCIMObject {
      * @throws BadRequestException
      */
     private void setSimpleAttribute(String attributeName,
-                                    AttributeSchema attributeSchema, Object value)
+                                    AttributeSchema attributeSchema, String value)
             throws CharonException, BadRequestException {
         if (this.isAttributeExist(attributeName)) {
-            ((SimpleAttribute) this.attributeList.get(attributeName)).updateValue(value);
+            ((SimpleAttribute) this.attributeList.get(attributeName)).setValue(value);
         } else {
             SimpleAttribute simpleAttribute = new SimpleAttribute(attributeName, value);
             simpleAttribute = (SimpleAttribute) DefaultAttributeFactory.

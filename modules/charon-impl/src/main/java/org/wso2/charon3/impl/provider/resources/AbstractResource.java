@@ -71,7 +71,7 @@ public class AbstractResource implements Microservice {
             logger.debug(e.getMessage(), e);
         }
 
-        return buildResponse(AbstractResourceManager.encodeSCIMException(e));
+        return buildResponse(AbstractResourceManager.encodeSCIMException(e, encoder));
     }
 
     /*
@@ -81,13 +81,13 @@ public class AbstractResource implements Microservice {
      * @param e
      * @return
      */
-    protected Response handleFormatNotSupportedException(FormatNotSupportedException e) {
+    protected Response handleFormatNotSupportedException(FormatNotSupportedException e, JSONEncoder encoder) {
         if (logger.isDebugEnabled()) {
             logger.debug(e.getMessage(), e);
         }
 
         // use the default JSON encoder to build the error response.
-        return buildResponse(AbstractResourceManager.encodeSCIMException(e));
+        return buildResponse(AbstractResourceManager.encodeSCIMException(e, encoder));
     }
 
     /*

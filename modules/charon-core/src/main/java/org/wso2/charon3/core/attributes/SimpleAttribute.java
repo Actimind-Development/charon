@@ -15,10 +15,13 @@
  */
 package org.wso2.charon3.core.attributes;
 
+import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
 import org.wso2.charon3.core.schema.SCIMDefinitions;
 
 import java.util.Date;
+
+import static org.wso2.charon3.core.attributes.DefaultAttributeFactory.isAttributeDataTypeValid;
 
 /**
  * This class is a blueprint of SimpleAttribute defined in SCIM Core Schema Spec.
@@ -44,9 +47,48 @@ public class SimpleAttribute extends AbstractAttribute {
     /*
      * set the value of the simple attribute
      * @param value
+     * @deprecated it does not perform type check at all. use typed setValue instead
      */
+    @Deprecated
     public void setValue(Object value) {
         this.value = value;
+    }
+
+    public void setValueFromObject(Object value) throws BadRequestException {
+        if (isAttributeDataTypeValid(value, type)) {
+            this.value = value;
+        }
+    }
+
+    public void setValue(SimpleAttribute anotherAttribute) {
+        ensureType(anotherAttribute.getType());
+        this.value = anotherAttribute.value;
+    }
+
+    public void setValue(String value) {
+        ensureType(SCIMDefinitions.DataType.STRING);
+        this.value = value;
+    }
+
+    public void setValue(int value) {
+        ensureType(SCIMDefinitions.DataType.INTEGER);
+        this.value = value;
+    }
+
+    public void setValue(Boolean value) {
+        ensureType(SCIMDefinitions.DataType.BOOLEAN);
+        this.value = value;
+    }
+
+    public void setValue(Date value) {
+        ensureType(SCIMDefinitions.DataType.DATE_TIME);
+        this.value = value;
+    }
+
+    private void ensureType(SCIMDefinitions.DataType expected)  {
+        if (this.type != expected) {
+            throw new IllegalStateException("Mismatch in requested data type");
+        }
     }
 
     /*
@@ -95,6 +137,19 @@ public class SimpleAttribute extends AbstractAttribute {
     }
 
     /*
+     * return the int type of the attribute value
+     * @return
+     * @throws CharonException
+     */
+    public Integer getIntValue() throws CharonException {
+        if (this.type.equals(SCIMDefinitions.DataType.INTEGER)) {
+            return (Integer) this.value;
+        } else {
+            throw new CharonException("Datatype doesn\'t match the datatype of the attribute value");
+        }
+    }
+
+    /*
      * return boolean type of the attribute value
      * @return
      * @throws CharonException
@@ -107,13 +162,4 @@ public class SimpleAttribute extends AbstractAttribute {
         }
     }
 
-    /*
-     * uodate the attribute value
-     * @param value
-     * @throws CharonException
-     */
-    public void updateValue(Object value) throws CharonException {
-            this.value = value;
-
-    }
 }
