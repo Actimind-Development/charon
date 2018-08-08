@@ -557,6 +557,10 @@ public class JSONDecoder {
     public AbstractSCIMObject decode(String scimResourceString, SCIMResourceTypeSchema schema)
             throws CharonException, BadRequestException {
         try {
+            if (scimResourceString.startsWith("[")) {
+                //assume here is only one item in array
+                scimResourceString = scimResourceString.substring(1, scimResourceString.length() - 1);
+            }
             JSONObject decodedJsonObj = new JSONObject(new JSONTokener(scimResourceString));
             AbstractSCIMObject scimObject = null;
             if (schema.getSchemasList().contains(SCIMConstants.GROUP_CORE_SCHEMA_URI)) {

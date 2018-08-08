@@ -44,9 +44,11 @@ import org.wso2.charon3.core.utils.codeutils.PatchOperation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This provides the methods on the PATCH operation of any resource type.
@@ -698,11 +700,10 @@ public class PatchOperationUtil {
                                                 AbstractSCIMObject oldResource, AbstractSCIMObject copyOfOldResource,
                                                 SCIMResourceTypeSchema schema)
             throws CharonException, BadRequestException {
-        //todo: I do not see any usage of "operation.path" here.
-        // I change the whole logic to support at least first-level attributes
         try {
-            //AbstractSCIMObject attributeHoldingSCIMObject =  decoder.decode(operation.getValues().toString(), schema);
-            AbstractSCIMObject attributeHoldingSCIMObject = getObjectToAdd(operation, decoder, schema);
+            AbstractSCIMObject attributeHoldingSCIMObject = operation.getPath() == null || operation.getPath().isEmpty()
+                    ? decoder.decode(operation.getValues().toString(), schema)
+                    : getObjectToAdd(operation, decoder, schema);
             if (oldResource != null) {
                 for (String attributeName : attributeHoldingSCIMObject.getAttributeList().keySet()) {
                     Attribute oldAttribute = oldResource.getAttribute(attributeName);
@@ -724,8 +725,14 @@ public class PatchOperationUtil {
                             MultiValuedAttribute attributeValue = (MultiValuedAttribute)
                                     attributeHoldingSCIMObject.getAttribute(attributeName);
 
+                            Set<Object> existentValues = new HashSet<Object>(((MultiValuedAttribute) oldAttribute)
+                                    .getAttributePrimitiveValues());
+
                             for (Object obj : attributeValue.getAttributePrimitiveValues()) {
-                                ((MultiValuedAttribute) oldAttribute).setAttributePrimitiveValue(obj);
+                                if (!existentValues.contains(obj)) {
+                                    ((MultiValuedAttribute) oldAttribute).setAttributePrimitiveValue(obj);
+                                    existentValues.add(obj);
+                                }
                             }
 
                         } else if (oldAttribute.getType().equals(SCIMDefinitions.DataType.COMPLEX)) {

@@ -228,6 +228,47 @@ public class UserResourceManagerTest {
         );
     }
 
+    @Test
+    public void testAdd_withoutPath() throws Exception {
+        //If omitted, the target location is assumed to be the resource
+        //      itself.  The "value" parameter contains a set of attributes to be
+        //      added to the resource.
+        final User original = new User();
+        original.setSchema("uzar");
+        original.setAttribute(simple(ATTR_ID, "1"));
+        original.setAttribute(simple(ATTR_NAME, "ab"));
+        original.setAttribute(simple(ATTR_ALIVE, true));
+        original.setAttribute(ints(ATTR_LUCKY_NUMBERS, Arrays.asList(3, 7)));
+        original.setAttribute(multi(ATTR_DEATH_DATES, Arrays.asList(
+                complex(ATTR_DEATH_DATES, Arrays.<Attribute>asList(
+                        simple(ATTR_DATE, DATE_FORMAT.parse("2018-01-01T00:00:00Z"))
+                ))), SCIMDefinitions.DataType.COMPLEX));
+        AtomicReference<User> patched = new AtomicReference<>();
+        StubUserManager mgr = getAndUpdate(original, patched);
+        SCIMResponse response = manager.updateWithPATCH("1", "{'schemas':['urn:ietf:params:scim:api:messages:2.0:PatchOp'],\n" +
+                "'Operations': [\n" +
+                "\t{'op': 'add', 'value': [{'alive': false, 'lucky': [3,4], 'death_dates': [{'date': '2018-05-15T00:00:00Z'}]}]}\n" +
+                "]}", mgr, "", "");
+        assertOk(response);
+        assertNotNull(patched.get());
+        List<ComplexAttribute> dates = AttributeUtil.<ComplexAttribute>multi(patched.get(), ATTR_DEATH_DATES);
+        List<String> datesAsStr = new ArrayList<>();
+        for (ComplexAttribute c : dates) {
+            datesAsStr.add(DATE_FORMAT.format(simpleDate(c, ATTR_DATE)));
+        }
+
+        assertEquals(
+                Arrays.asList("1", "ab", false, Arrays.asList(3, 7, 4), Arrays.asList("2018-01-01T00:00:00Z", "2018-05-15T00:00:00Z")),
+                Arrays.asList(
+                        simpleString(patched.get(), ATTR_ID),
+                        simpleString(patched.get(), ATTR_NAME),
+                        simpleBool(patched.get(), ATTR_ALIVE),
+                        AttributeUtil.<Integer>multi(patched.get(), ATTR_LUCKY_NUMBERS),
+                        datesAsStr
+                )
+        );
+    }
+
     //todo: test with user/group schemas
 
     private StubUserManager getAndUpdate(final User original, final AtomicReference<User> patched) {
