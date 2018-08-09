@@ -330,8 +330,6 @@ public class GroupResourceManager extends AbstractResourceManager {
             }
         } catch (CharonException e) {
             return encodeSCIMException(e);
-        } catch (NotFoundException e) {
-            return encodeSCIMException(e);
         } catch (InternalErrorException e) {
             return encodeSCIMException(e);
         } catch (BadRequestException e) {
@@ -428,8 +426,6 @@ public class GroupResourceManager extends AbstractResourceManager {
                 throw new InternalErrorException(error);
             }
         } catch (CharonException e) {
-            return encodeSCIMException(e);
-        } catch (NotFoundException e) {
             return encodeSCIMException(e);
         } catch (InternalErrorException e) {
             return encodeSCIMException(e);
@@ -652,8 +648,7 @@ public class GroupResourceManager extends AbstractResourceManager {
      * @param groups
      * @return
      */
-    public ListedResource createListedResource(List<Object> groups, int startIndex, int totalResults)
-            throws CharonException, NotFoundException {
+    public ListedResource createListedResource(List<Object> groups, int startIndex, int totalResults) {
         ListedResource listedResource = new ListedResource();
         listedResource.setSchema(SCIMConstants.LISTED_RESOURCE_CORE_SCHEMA_URI);
         listedResource.setTotalResults(totalResults);
