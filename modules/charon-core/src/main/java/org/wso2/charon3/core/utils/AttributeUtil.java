@@ -262,8 +262,10 @@ public class AttributeUtil {
         if (schema.getMultiValued() || schema.getType() == SCIMDefinitions.DataType.COMPLEX) {
             throw new CharonException("Shall be called for simple attributes only");
         }
-        return (SimpleAttribute) DefaultAttributeFactory.createAttribute(schema,
+        SimpleAttribute result = (SimpleAttribute) DefaultAttributeFactory.createAttribute(schema,
                 new SimpleAttribute(schema.getName(), value));
+        result.setType(schema.getType());
+        return result;
     }
 
     public static MultiValuedAttribute strings(AttributeSchema schema, List<String> values)
@@ -294,14 +296,14 @@ public class AttributeUtil {
         return multi(schema, values, SCIMDefinitions.DataType.INTEGER);
     }
 
-    public static Attribute complex(AttributeSchema schema, List<Attribute> attributes)
+    public static ComplexAttribute complex(AttributeSchema schema, List<Attribute> attributes)
             throws CharonException, BadRequestException {
         if (schema.getType() == SCIMDefinitions.DataType.COMPLEX) {
             ComplexAttribute attr = new ComplexAttribute(schema.getName());
             for (Attribute sub: attributes) {
                 attr.setSubAttribute(sub);
             }
-            return DefaultAttributeFactory.createAttribute(schema, attr);
+            return (ComplexAttribute) DefaultAttributeFactory.createAttribute(schema, attr);
         } else {
             throw new CharonException("shall be called for multi or complex attrs");
         }
@@ -347,16 +349,48 @@ public class AttributeUtil {
         return attr == null ? null : attr.getDateValue();
     }
 
+    public static ComplexAttribute complex(AbstractSCIMObject obj, AttributeSchema schema) {
+        return (ComplexAttribute) obj.getAttribute(schema.getName());
+    }
 
-    public static <T> List<T> multi(AbstractSCIMObject obj, AttributeSchema schema) {
+    public static <T> List<T> multiValues(AbstractSCIMObject obj, AttributeSchema schema) {
+        return values(multi(obj, schema), SCIMConstants.CommonSchemaConstants.VALUE);
+    }
+
+    public static <T> List<T> values(List<ComplexAttribute> complex, String name) {
+        List<T> out = new ArrayList<>(complex.size());
+        for (ComplexAttribute ca: complex) {
+            try {
+                out.add((T) ((SimpleAttribute) ca.getSubAttribute(name)).getValue());
+            } catch (CharonException e) {
+                //impossible
+                throw new RuntimeException(e);
+            }
+        }
+        return out;
+    }
+
+    public static List<ComplexAttribute> multi(AbstractSCIMObject obj, AttributeSchema schema) {
         MultiValuedAttribute attr = (MultiValuedAttribute) obj.getAttribute(schema.getName());
-        List<T> out = new ArrayList<>();
+        List<ComplexAttribute> out = new ArrayList<>();
         if (attr != null) {
             for (Object item: attr.getAttributePrimitiveValues()) {
-                out.add((T) item);
+                try {
+                    ComplexAttribute inside = (ComplexAttribute) DefaultAttributeFactory.createAttribute(schema,
+                            new ComplexAttribute(schema.getName()));
+                    inside.setSubAttribute(DefaultAttributeFactory.createAttribute(
+                            schema.getType() == SCIMDefinitions.DataType.COMPLEX
+                                    ? schema.getSubAttributeSchema(SCIMConstants.CommonSchemaConstants.VALUE)
+                                    : schema,
+                            new SimpleAttribute(SCIMConstants.CommonSchemaConstants.VALUE, item)
+                    ));
+                    out.add(inside);
+                } catch (BadRequestException e) {
+                    throw new RuntimeException(e);
+                }
             }
-            for (Object item: attr.getAttributeValues()) {
-                out.add((T) item);
+            for (Attribute item: attr.getAttributeValues()) {
+                out.add((ComplexAttribute) item);
             }
         }
         return out;
