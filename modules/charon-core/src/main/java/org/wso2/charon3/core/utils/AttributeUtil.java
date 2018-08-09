@@ -262,10 +262,8 @@ public class AttributeUtil {
         if (schema.getMultiValued() || schema.getType() == SCIMDefinitions.DataType.COMPLEX) {
             throw new CharonException("Shall be called for simple attributes only");
         }
-        SimpleAttribute result = (SimpleAttribute) DefaultAttributeFactory.createAttribute(schema,
+        return (SimpleAttribute) DefaultAttributeFactory.createAttribute(schema,
                 new SimpleAttribute(schema.getName(), value));
-        result.setType(schema.getType());
-        return result;
     }
 
     public static MultiValuedAttribute strings(AttributeSchema schema, List<String> values)
