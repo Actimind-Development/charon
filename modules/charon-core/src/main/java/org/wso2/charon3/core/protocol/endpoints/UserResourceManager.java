@@ -99,13 +99,15 @@ public class UserResourceManager extends AbstractResourceManager {
             }
             //perform service provider side validation.
             ServerSideValidator.validateRetrievedSCIMObject(user, schema, attributes, excludeAttributes);
-            //convert the user into requested format.
-            String encodedUser = encoder.encodeSCIMObject(user);
             //if there are any http headers to be added in the response header.
             Map<String, String> responseHeaders = new HashMap<String, String>();
             responseHeaders.put(SCIMConstants.CONTENT_TYPE_HEADER, SCIMConstants.APPLICATION_JSON);
-            responseHeaders.put(SCIMConstants.LOCATION_HEADER, getResourceEndpointURL(
-                    SCIMConstants.USER_ENDPOINT) + "/" + user.getId());
+            String location = getResourceEndpointURL(
+                    SCIMConstants.USER_ENDPOINT) + "/" + user.getId();
+            responseHeaders.put(SCIMConstants.LOCATION_HEADER, location);
+            user.setLocation(location);
+            //convert the user into requested format.
+            String encodedUser = encoder.encodeSCIMObject(user);
             return new SCIMResponse(ResponseCodeConstants.CODE_OK, encodedUser, responseHeaders);
 
         } catch (NotFoundException e) {
@@ -165,12 +167,13 @@ public class UserResourceManager extends AbstractResourceManager {
                 User copiedUser = (User) CopyUtil.deepCopy(createdUser);
                 //need to remove password before returning
                 ServerSideValidator.validateReturnedAttributes(copiedUser, attributes, excludeAttributes);
-                encodedUser = encoder.encodeSCIMObject(copiedUser);
                 //add location header
-                responseHeaders.put(SCIMConstants.LOCATION_HEADER, getResourceEndpointURL(
-                        SCIMConstants.USER_ENDPOINT) + "/" + createdUser.getId());
+                String location = getResourceEndpointURL(
+                        SCIMConstants.USER_ENDPOINT) + "/" + createdUser.getId();
+                responseHeaders.put(SCIMConstants.LOCATION_HEADER, location);
                 responseHeaders.put(SCIMConstants.CONTENT_TYPE_HEADER, SCIMConstants.APPLICATION_JSON);
-
+                copiedUser.setLocation(location);
+                encodedUser = encoder.encodeSCIMObject(copiedUser);
             } else {
                 String error = "Newly created User resource is null.";
                 throw new InternalErrorException(error);
@@ -320,9 +323,11 @@ public class UserResourceManager extends AbstractResourceManager {
 
                 returnedUsers = tempList;
 
-                for (Object user : returnedUsers) {
+                for (Object obj : returnedUsers) {
+                    User user = (User) obj;
                     //perform service provider side validation.
-                    ServerSideValidator.validateRetrievedSCIMObjectInList((User) user, schema, attributes,
+                    user.setLocation(getResourceEndpointURL(SCIMConstants.USER_ENDPOINT) + "/" + user.getId());
+                    ServerSideValidator.validateRetrievedSCIMObjectInList(user, schema, attributes,
                             excludeAttributes);
                 }
                 //create a listed resource object out of the returned users list.
@@ -501,11 +506,13 @@ public class UserResourceManager extends AbstractResourceManager {
                 User copiedUser = (User) CopyUtil.deepCopy(updatedUser);
                 //need to remove password before returning
                 ServerSideValidator.validateReturnedAttributes(copiedUser, attributes, excludeAttributes);
-                encodedUser = encoder.encodeSCIMObject(copiedUser);
                 //add location header
-                httpHeaders.put(SCIMConstants.LOCATION_HEADER, getResourceEndpointURL(
-                        SCIMConstants.USER_ENDPOINT) + "/" + updatedUser.getId());
+                String location = getResourceEndpointURL(
+                        SCIMConstants.USER_ENDPOINT) + "/" + updatedUser.getId();
+                httpHeaders.put(SCIMConstants.LOCATION_HEADER, location);
                 httpHeaders.put(SCIMConstants.CONTENT_TYPE_HEADER, SCIMConstants.APPLICATION_JSON);
+                copiedUser.setLocation(location);
+                encodedUser = encoder.encodeSCIMObject(copiedUser);
 
             } else {
                 String error = "Updated User resource is null.";
@@ -622,12 +629,13 @@ public class UserResourceManager extends AbstractResourceManager {
                 User copiedUser = (User) CopyUtil.deepCopy(newUser);
                 //need to remove password before returning
                 ServerSideValidator.validateReturnedAttributes(copiedUser, attributes, excludeAttributes);
-                encodedUser = getEncoder().encodeSCIMObject(copiedUser);
                 //add location header
-                httpHeaders.put(SCIMConstants.LOCATION_HEADER, getResourceEndpointURL(
-                        SCIMConstants.USER_ENDPOINT) + "/" + newUser.getId());
+                String location = getResourceEndpointURL(
+                        SCIMConstants.USER_ENDPOINT) + "/" + newUser.getId();
+                httpHeaders.put(SCIMConstants.LOCATION_HEADER, location);
                 httpHeaders.put(SCIMConstants.CONTENT_TYPE_HEADER, SCIMConstants.APPLICATION_JSON);
-
+                copiedUser.setLocation(location);
+                encodedUser = getEncoder().encodeSCIMObject(copiedUser);
             } else {
                 String error = "Updated User resource is null.";
                 throw new CharonException(error);

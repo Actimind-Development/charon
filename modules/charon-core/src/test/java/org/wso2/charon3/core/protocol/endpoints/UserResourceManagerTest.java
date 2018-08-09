@@ -99,7 +99,7 @@ public class UserResourceManagerTest {
         };
         SCIMResponse response = manager.get("3", mgr, "", "");
 
-        assertOk(response, "{'schemas':['uzar'],'id':'3'}");
+        assertOk(response, "{'meta':{'location':'/scim/Users/3'},'schemas':['uzar'],'id':'3'}");
         assertLocation(response, "/scim/Users/3");
     }
 
@@ -116,7 +116,7 @@ public class UserResourceManagerTest {
             }
         };
         SCIMResponse response = manager.get("3", mgr, "name", "");
-        assertOk(response, "{'schemas':['uzar'],'name':'a','id':'3'}");
+        assertOk(response, "{'meta':{'location':'/scim/Users/3'},'schemas':['uzar'],'name':'a','id':'3'}");
     }
 
     @Test
@@ -134,7 +134,7 @@ public class UserResourceManagerTest {
             }
         };
         SCIMResponse response = manager.create("{'schemas':['uzar'],'name':'b'}", mgr, "name", "");
-        assertOk(response, 201, "{'schemas':['uzar'],'name':'b','id':'4'}");
+        assertOk(response, 201, "{'meta':{'location':'/scim/Users/4'},'schemas':['uzar'],'name':'b','id':'4'}");
     }
 
     @Test
@@ -162,7 +162,7 @@ public class UserResourceManagerTest {
                         simpleString(patched.get(), ATTR_ID),
                         simpleString(patched.get(), ATTR_NAME),
                         simpleBool(patched.get(), ATTR_ALIVE),
-                        AttributeUtil.<Integer>multi(patched.get(), ATTR_LUCKY_NUMBERS)
+                        AttributeUtil.<Integer>multiValues(patched.get(), ATTR_LUCKY_NUMBERS)
                 )
         );
     }
@@ -187,7 +187,7 @@ public class UserResourceManagerTest {
         assertNotNull(patched.get());
         assertEquals(
                 Arrays.asList(7, 9),
-                AttributeUtil.<Integer>multi(patched.get(), ATTR_LUCKY_NUMBERS)
+                AttributeUtil.<Integer>multiValues(patched.get(), ATTR_LUCKY_NUMBERS)
         );
     }
 
@@ -217,7 +217,7 @@ public class UserResourceManagerTest {
                 "]}", mgr, "", "");
         assertOk(response);
         assertNotNull(patched.get());
-        List<ComplexAttribute> dates = AttributeUtil.<ComplexAttribute>multi(patched.get(), ATTR_DEATH_DATES);
+        List<ComplexAttribute> dates = AttributeUtil.multi(patched.get(), ATTR_DEATH_DATES);
         List<String> datesAsStr = new ArrayList<>();
         for (ComplexAttribute c : dates) {
             datesAsStr.add(DATE_FORMAT.format(simpleDate(c, ATTR_DATE)));
@@ -263,7 +263,7 @@ public class UserResourceManagerTest {
                         simpleString(patched.get(), ATTR_ID),
                         simpleString(patched.get(), ATTR_NAME),
                         simpleBool(patched.get(), ATTR_ALIVE),
-                        AttributeUtil.<Integer>multi(patched.get(), ATTR_LUCKY_NUMBERS),
+                        AttributeUtil.<Integer>multiValues(patched.get(), ATTR_LUCKY_NUMBERS),
                         datesAsStr
                 )
         );
