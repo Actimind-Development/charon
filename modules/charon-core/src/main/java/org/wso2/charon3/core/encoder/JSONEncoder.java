@@ -87,7 +87,8 @@ public class JSONEncoder {
 
         try {
             //construct error object with details in the exception
-            errorObject.put(ResponseCodeConstants.SCHEMAS, exception.getSchemas());
+            errorObject.put(ResponseCodeConstants.SCHEMAS,
+                    new JSONArray().put(exception.getSchemas()));
             if (exception instanceof BadRequestException) {
                 errorObject.put(ResponseCodeConstants.SCIM_TYPE, ((BadRequestException) (exception)).getScimType());
             }
