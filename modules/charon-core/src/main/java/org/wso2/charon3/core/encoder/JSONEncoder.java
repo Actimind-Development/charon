@@ -25,6 +25,7 @@ import org.wso2.charon3.core.attributes.ComplexAttribute;
 import org.wso2.charon3.core.attributes.MultiValuedAttribute;
 import org.wso2.charon3.core.attributes.SimpleAttribute;
 import org.wso2.charon3.core.config.SCIMConfigConstants;
+import org.wso2.charon3.core.config.SCIMUserSchemaExtensionBuilder;
 import org.wso2.charon3.core.exceptions.AbstractCharonException;
 import org.wso2.charon3.core.exceptions.BadRequestException;
 import org.wso2.charon3.core.exceptions.CharonException;
@@ -33,9 +34,9 @@ import org.wso2.charon3.core.objects.SCIMObject;
 import org.wso2.charon3.core.objects.bulk.BulkResponseContent;
 import org.wso2.charon3.core.objects.bulk.BulkResponseData;
 import org.wso2.charon3.core.protocol.ResponseCodeConstants;
+import org.wso2.charon3.core.schema.SCIMAttributeSchema;
 import org.wso2.charon3.core.schema.SCIMConstants;
 import org.wso2.charon3.core.schema.SCIMDefinitions;
-import org.wso2.charon3.core.schema.SCIMResourceSchemaManager;
 import org.wso2.charon3.core.utils.AttributeUtil;
 
 import java.util.ArrayList;
@@ -293,6 +294,10 @@ public class JSONEncoder {
      * @return
      */
     public String buildServiceProviderConfigJsonBody(HashMap<String, Object> config) throws JSONException {
+        return buildServiceProviderConfigJson(config).toString();
+    }
+
+    public JSONObject buildServiceProviderConfigJson(HashMap<String, Object> config) throws JSONException {
         JSONObject rootObject = new JSONObject();
 
         JSONObject bulkObject = new JSONObject();
@@ -365,7 +370,7 @@ public class JSONEncoder {
         rootObject.put(SCIMConstants.ServiceProviderConfigSchemaConstants.AUTHENTICATION_SCHEMAS,
                 authenticationSchemesArray);
 
-        return rootObject.toString();
+        return rootObject;
 
     }
 
@@ -374,6 +379,15 @@ public class JSONEncoder {
      * @return
      */
     public String buildUserResourceTypeJsonBody() throws JSONException {
+        List<SCIMAttributeSchema> schemas = new ArrayList<>();
+        SCIMAttributeSchema ext = SCIMUserSchemaExtensionBuilder.getInstance().getExtensionSchema();
+        if (ext != null) {
+            schemas.add(ext);
+        }
+        return buildUserResourceTypeJsonBody(schemas).toString();
+    }
+
+    public JSONObject buildUserResourceTypeJsonBody(List<SCIMAttributeSchema> extensions) throws JSONException {
         JSONObject userResourceTypeObject = new JSONObject();
 
         userResourceTypeObject.put(
@@ -390,21 +404,24 @@ public class JSONEncoder {
         userResourceTypeObject.put(
                 SCIMConstants.ResourceTypeSchemaConstants.SCHEMA, SCIMConstants.USER_CORE_SCHEMA_URI);
 
-        //todo: pass extension info outside
-        if (SCIMResourceSchemaManager.getInstance().isExtensionSet()) {
-            JSONObject extensionSchemaObject = new JSONObject();
+        if (!extensions.isEmpty()) {
+            JSONArray array = new JSONArray();
+            for (SCIMAttributeSchema ext: extensions) {
+                JSONObject extensionSchemaObject = new JSONObject();
 
-            extensionSchemaObject.put(
-                    SCIMConstants.ResourceTypeSchemaConstants.SCHEMA_EXTENSIONS_SCHEMA,
-                    SCIMResourceSchemaManager.getInstance().getExtensionURI());
-            extensionSchemaObject.put(
-                    SCIMConstants.ResourceTypeSchemaConstants.SCHEMA_EXTENSIONS_REQUIRED,
-                    SCIMResourceSchemaManager.getInstance().getExtensionRequired());
+                extensionSchemaObject.put(
+                        SCIMConstants.ResourceTypeSchemaConstants.SCHEMA_EXTENSIONS_SCHEMA,
+                        ext.getURI());
+                extensionSchemaObject.put(
+                        SCIMConstants.ResourceTypeSchemaConstants.SCHEMA_EXTENSIONS_REQUIRED,
+                        ext.getRequired());
+                array.put(extensionSchemaObject);
+            }
             userResourceTypeObject.put(
-                    SCIMConstants.ResourceTypeSchemaConstants.SCHEMA_EXTENSIONS, extensionSchemaObject);
+                    SCIMConstants.ResourceTypeSchemaConstants.SCHEMA_EXTENSIONS, array);
         }
 
-        return userResourceTypeObject.toString();
+        return userResourceTypeObject;
     }
 
     /**
@@ -412,6 +429,10 @@ public class JSONEncoder {
      * @return
      */
     public String buildGroupResourceTypeJsonBody() throws JSONException {
+        return buildGroupResourceTypeJson().toString();
+    }
+
+    public JSONObject buildGroupResourceTypeJson() throws JSONException {
         JSONObject groupResourceTypeObject = new JSONObject();
 
         groupResourceTypeObject.put(
@@ -427,7 +448,7 @@ public class JSONEncoder {
                 SCIMConstants.ResourceTypeSchemaConstants.GROUP);
         groupResourceTypeObject.put(
                 SCIMConstants.ResourceTypeSchemaConstants.SCHEMA, SCIMConstants.GROUP_CORE_SCHEMA_URI);
-        return groupResourceTypeObject.toString();
+        return groupResourceTypeObject;
     }
 
     /*
